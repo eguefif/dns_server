@@ -49,6 +49,7 @@ impl DNSHeader {
         let mut response = [0; 12];
 
         let id = self.id.to_be_bytes();
+        println!("{:?}", id);
         response[0] = id[0];
         response[1] = id[1];
 
