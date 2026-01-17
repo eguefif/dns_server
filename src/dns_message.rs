@@ -4,14 +4,16 @@ use modular_bitfield::prelude::*;
 #[bitfield]
 #[derive(Clone)]
 struct HeaderFlags {
-    qr: B1,
-    opcode: B4,
-    aa: B1,
-    tc: B1,
+    // First byte
     rd: B1,
-    ra: B1,
-    reserved: B3,
+    tc: B1,
+    aa: B1,
+    opcode: B4,
+    qr: B1,
+    // Second Byte
     rcode: B4,
+    reserved: B3,
+    ra: B1,
 }
 
 struct DNSHeader {
@@ -26,7 +28,7 @@ struct DNSHeader {
 impl DNSHeader {
     pub fn new() -> Self {
         let flags = HeaderFlags::new()
-            .with_qr(1)
+            .with_qr(0b1)
             .with_opcode(0)
             .with_aa(0)
             .with_tc(0)
@@ -49,11 +51,11 @@ impl DNSHeader {
         let mut response = [0; 12];
 
         let id = self.id.to_be_bytes();
-        println!("{:?}", id);
         response[0] = id[0];
         response[1] = id[1];
 
         let flags = self.flags.clone().into_bytes();
+        println!("{:b} {:b}", flags[0], flags[1]);
         response[2] = flags[0];
         response[3] = flags[1];
 

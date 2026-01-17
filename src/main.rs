@@ -16,8 +16,6 @@ fn main() {
             Ok((size, source)) => {
                 println!("Received {} bytes from {}", size, source);
                 let response = create_response();
-                println!("Printing bytes: {}", response.len());
-                println!("{:?} ", response);
                 udp_socket
                     .send_to(&response, source)
                     .expect("Failed to send response");
