@@ -1,8 +1,11 @@
 use crate::dns_message::{DNSMessage, HeaderFlags};
+use std::net::Ipv4Addr;
 #[allow(unused_imports)]
 use std::net::UdpSocket;
 
 pub mod dns_message;
+
+const TTL: u32 = 60;
 
 fn main() {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -38,7 +41,22 @@ fn create_response() -> Vec<u8> {
         .with_ra(0)
         .with_rcode(0);
 
-    let response = DNSMessage::new(flags, 1, 0, 0, 0, "codecrafters.io".to_string());
+    let ip = Ipv4Addr::new(8, 8, 8, 8);
+    let response = DNSMessage::new(
+        1234,
+        flags,
+        1,
+        1,
+        0,
+        0,
+        "codecrafters.io".to_string(),
+        1,
+        1,
+        1,
+        1,
+        TTL,
+        ip,
+    );
 
     return response.to_bytes();
 }
