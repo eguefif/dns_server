@@ -10,9 +10,10 @@ pub mod answer;
 pub mod header;
 pub mod question;
 
+#[derive(Debug)]
 pub struct DNSMessage {
     pub header: Header,
-    question: Question,
+    pub question: Question,
     answer: Answer,
 }
 
@@ -48,7 +49,7 @@ impl DNSMessage {
             return Err(DNSError::RequestHeaderSizeError(size));
         }
         let header = Header::from_bytes(&source[0..12]);
-        let question = Question::new("codecrafters.io".to_string(), 1, 1);
+        let question = Question::from_bytes(&source[12..]);
         let answer = Answer::new(
             "codecrafters.io".to_string(),
             1,
@@ -73,7 +74,7 @@ impl DNSMessage {
     }
 }
 
-fn get_labels(domain: String) -> Vec<(u8, String)> {
+fn get_labels(domain: String) -> Labels {
     let splits = domain.split(".");
     let mut labels = vec![];
     for split in splits {
@@ -92,4 +93,43 @@ fn labels_to_bytes(labels: &[(u8, String)]) -> Vec<u8> {
     }
 
     return bytes;
+}
+
+type Labels = Vec<(u8, String)>;
+
+fn labels_from_bytes(buffer: &[u8]) -> Labels {
+    let mut labels = vec![];
+
+    let mut iter = buffer.iter().peekable();
+    loop {
+        let Some(size) = iter.next() else {
+            todo!("handle error: early stop")
+        };
+        let mut label = String::new();
+        for _ in 0..*size {
+            let byte = iter.next().unwrap();
+            let c = *byte as char;
+            print!("{}", c);
+            label.push(c);
+        }
+        print!(".");
+        labels.push((*size, label));
+        let Some(&peek) = iter.peek() else {
+            todo!("Handle error: early stop")
+        };
+        if *peek == 0 {
+            break;
+        }
+    }
+
+    return labels;
+}
+
+fn get_labels_size(labels: &Labels) -> usize {
+    let mut size: usize = 0;
+    for (s, _) in labels {
+        size += *s as usize
+    }
+
+    size as usize
 }

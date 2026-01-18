@@ -1,6 +1,7 @@
 use crate::dns_message::{get_labels, labels_to_bytes};
 use std::net::Ipv4Addr;
 
+#[derive(Debug)]
 pub(super) struct Answer {
     labels: Vec<(u8, String)>,
     answer_type: u16,

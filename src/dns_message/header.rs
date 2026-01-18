@@ -1,7 +1,7 @@
 use modular_bitfield::prelude::*;
 
 #[bitfield]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct HeaderFlags {
     // First byte
     pub rd: B1,
@@ -16,6 +16,7 @@ pub struct HeaderFlags {
     pub ra: B1,
 }
 
+#[derive(Debug)]
 pub struct Header {
     pub id: u16,
     pub flags: HeaderFlags,

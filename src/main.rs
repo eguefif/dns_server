@@ -62,7 +62,7 @@ fn create_response(request: DNSMessage) -> Vec<u8> {
         1,
         0,
         0,
-        "codecrafters.io".to_string(),
+        request.question.get_domain(),
         1,
         1,
         1,
