@@ -5,7 +5,7 @@ use std::net::Ipv4Addr;
 // TODO: handle error
 //      * when splitting => should return error if domain not valid
 pub struct DNSMessage {
-    header: Header,
+    pub header: Header,
     question: Question,
     answer: Answer,
 }
@@ -29,6 +29,25 @@ impl DNSMessage {
         let header = Header::new(id, flags, qdcount, ancount, nscount, arcount);
         let question = Question::new(domain.clone(), question_type, question_class);
         let answer = Answer::new(domain.clone(), answer_type, answer_class, ttl, ip);
+
+        Self {
+            header,
+            question,
+            answer,
+        }
+    }
+
+    pub fn from_buffer(_size: usize, source: &[u8]) -> Self {
+        // TODO: check size
+        let header = Header::from_bytes(&source[0..12]);
+        let question = Question::new("codecrafters.io".to_string(), 1, 1);
+        let answer = Answer::new(
+            "codecrafters.io".to_string(),
+            1,
+            1,
+            60,
+            Ipv4Addr::new(8, 8, 8, 8),
+        );
 
         Self {
             header,
@@ -62,9 +81,9 @@ pub struct HeaderFlags {
     pub ra: B1,
 }
 
-struct Header {
-    id: u16,
-    flags: HeaderFlags,
+pub struct Header {
+    pub id: u16,
+    pub flags: HeaderFlags,
     qdcount: u16,
     ancount: u16,
     nscount: u16,
@@ -82,6 +101,25 @@ impl Header {
     ) -> Self {
         Self {
             id: id,
+            flags,
+            qdcount,
+            ancount,
+            nscount,
+            arcount,
+        }
+    }
+
+    pub fn from_bytes(source: &[u8]) -> Self {
+        // TODO: handle error
+        let id = u16::from_be_bytes(source[0..2].try_into().unwrap());
+        let flags = HeaderFlags::from_bytes(source[2..4].try_into().unwrap());
+        let qdcount = u16::from_be_bytes(source[4..6].try_into().unwrap());
+        let ancount = u16::from_be_bytes(source[6..8].try_into().unwrap());
+        let nscount = u16::from_be_bytes(source[8..10].try_into().unwrap());
+        let arcount = u16::from_be_bytes(source[10..12].try_into().unwrap());
+
+        Self {
+            id,
             flags,
             qdcount,
             ancount,

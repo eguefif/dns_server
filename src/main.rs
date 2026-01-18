@@ -1,7 +1,7 @@
 use crate::dns_message::{DNSMessage, HeaderFlags};
 use std::net::Ipv4Addr;
 #[allow(unused_imports)]
-use std::net::UdpSocket;
+use std::net::{SocketAddr, UdpSocket};
 
 pub mod dns_message;
 
@@ -18,7 +18,8 @@ fn main() {
         match udp_socket.recv_from(&mut buf) {
             Ok((size, source)) => {
                 println!("Received {} bytes from {}", size, source);
-                let response = create_response();
+                let request = get_request(size, buf);
+                let response = create_response(request);
                 udp_socket
                     .send_to(&response, source)
                     .expect("Failed to send response");
@@ -31,19 +32,25 @@ fn main() {
     }
 }
 
-fn create_response() -> Vec<u8> {
+fn create_response(request: DNSMessage) -> Vec<u8> {
+    println!("rcode: {}", request.header.flags.opcode());
+    let rcode = if request.header.flags.opcode() == 0 {
+        0
+    } else {
+        4
+    };
     let flags = HeaderFlags::new()
         .with_qr(1)
-        .with_opcode(0)
+        .with_opcode(request.header.flags.opcode())
         .with_aa(0)
         .with_tc(0)
-        .with_rd(0)
+        .with_rd(request.header.flags.rd())
         .with_ra(0)
-        .with_rcode(0);
+        .with_rcode(rcode);
 
     let ip = Ipv4Addr::new(8, 8, 8, 8);
     let response = DNSMessage::new(
-        1234,
+        request.header.id,
         flags,
         1,
         1,
@@ -59,4 +66,8 @@ fn create_response() -> Vec<u8> {
     );
 
     return response.to_bytes();
+}
+
+fn get_request(size: usize, buffer: [u8; 512]) -> DNSMessage {
+    DNSMessage::from_buffer(size, &buffer)
 }
