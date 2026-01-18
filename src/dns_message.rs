@@ -1,6 +1,8 @@
 #![allow(dead_code)]
+use crate::dns_error::DNSError;
 use modular_bitfield::prelude::*;
 use std::net::Ipv4Addr;
+use std::result::Result;
 
 // TODO: handle error
 //      * when splitting => should return error if domain not valid
@@ -37,8 +39,10 @@ impl DNSMessage {
         }
     }
 
-    pub fn from_buffer(_size: usize, source: &[u8]) -> Self {
-        // TODO: check size
+    pub fn from_buffer(size: usize, source: &[u8]) -> Result<Self, DNSError> {
+        if size < 13 {
+            return Err(DNSError::RequestHeaderSizeError(size));
+        }
         let header = Header::from_bytes(&source[0..12]);
         let question = Question::new("codecrafters.io".to_string(), 1, 1);
         let answer = Answer::new(
@@ -49,11 +53,11 @@ impl DNSMessage {
             Ipv4Addr::new(8, 8, 8, 8),
         );
 
-        Self {
+        Ok(Self {
             header,
             question,
             answer,
-        }
+        })
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -110,13 +114,15 @@ impl Header {
     }
 
     pub fn from_bytes(source: &[u8]) -> Self {
-        // TODO: handle error
-        let id = u16::from_be_bytes(source[0..2].try_into().unwrap());
-        let flags = HeaderFlags::from_bytes(source[2..4].try_into().unwrap());
-        let qdcount = u16::from_be_bytes(source[4..6].try_into().unwrap());
-        let ancount = u16::from_be_bytes(source[6..8].try_into().unwrap());
-        let nscount = u16::from_be_bytes(source[8..10].try_into().unwrap());
-        let arcount = u16::from_be_bytes(source[10..12].try_into().unwrap());
+        // The following should never crash, source is at least 12 bytes long
+        assert_eq!(source.len(), 12);
+
+        let id = u16::from_be_bytes(source[0..2].try_into().expect("Error parsing flags"));
+        let flags = HeaderFlags::from_bytes(source[2..4].try_into().expect("Error parsing flags"));
+        let qdcount = u16::from_be_bytes(source[4..6].try_into().expect("Error parsing flags"));
+        let ancount = u16::from_be_bytes(source[6..8].try_into().expect("Error parsing flags"));
+        let nscount = u16::from_be_bytes(source[8..10].try_into().expect("Error parsing flags"));
+        let arcount = u16::from_be_bytes(source[10..12].try_into().expect("Error parsing flags"));
 
         Self {
             id,
