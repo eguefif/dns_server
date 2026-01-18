@@ -1,5 +1,5 @@
 use crate::dns_error::DNSError;
-use crate::dns_message::{DNSMessage, HeaderFlags};
+use crate::dns_message::{DNSMessage, header::HeaderFlags};
 use std::net::Ipv4Addr;
 #[allow(unused_imports)]
 use std::net::{SocketAddr, UdpSocket};
