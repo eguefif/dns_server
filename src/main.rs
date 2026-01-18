@@ -1,4 +1,5 @@
 use crate::dns_error::DNSError;
+use crate::dns_message::answer::Answer;
 use crate::dns_message::{DNSMessage, header::HeaderFlags};
 use std::net::Ipv4Addr;
 #[allow(unused_imports)]
@@ -9,6 +10,8 @@ pub mod dns_error;
 pub mod dns_message;
 
 const TTL: u32 = 60;
+
+// TODO: working on multiple questions receiving
 
 fn main() {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -54,22 +57,20 @@ fn create_response(request: DNSMessage) -> Vec<u8> {
         .with_ra(0)
         .with_rcode(rcode);
 
-    let ip = Ipv4Addr::new(8, 8, 8, 8);
-    let response = DNSMessage::new(
-        request.header.id,
-        flags,
-        1,
-        1,
-        0,
-        0,
-        request.question.get_domain(),
-        1,
-        1,
-        1,
-        1,
-        TTL,
-        ip,
-    );
+    let mut questions = vec![];
+    let mut answers = vec![];
+    for question in request.questions {
+        questions.push(question.clone());
+        answers.push(Answer::new(
+            question.get_domain(),
+            1,
+            1,
+            TTL,
+            Ipv4Addr::new(8, 8, 8, 8),
+        ));
+    }
+
+    let response = DNSMessage::new(request.header.id, flags, questions, answers);
 
     return response.to_bytes();
 }

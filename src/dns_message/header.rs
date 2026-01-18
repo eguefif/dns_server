@@ -20,8 +20,8 @@ pub struct HeaderFlags {
 pub struct Header {
     pub id: u16,
     pub flags: HeaderFlags,
-    qdcount: u16,
-    ancount: u16,
+    pub qdcount: u16,
+    pub ancount: u16,
     nscount: u16,
     arcount: u16,
 }

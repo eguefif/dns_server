@@ -2,7 +2,7 @@ use crate::dns_message::{get_labels, labels_to_bytes};
 use std::net::Ipv4Addr;
 
 #[derive(Debug)]
-pub(super) struct Answer {
+pub struct Answer {
     labels: Vec<(u8, String)>,
     answer_type: u16,
     class: u16,
@@ -13,12 +13,13 @@ pub(super) struct Answer {
 
 impl Answer {
     pub fn new(domain: String, answer_type: u16, class: u16, ttl: u32, ip: Ipv4Addr) -> Self {
+        let ip_octets = ip.octets();
         Self {
             labels: get_labels(domain),
             answer_type,
             class,
             ttl,
-            len: 0,
+            len: ip_octets.len() as u16,
             data: ip,
         }
     }
@@ -34,7 +35,6 @@ impl Answer {
         answer.extend_from_slice(&self.ttl.to_be_bytes());
         answer.extend_from_slice(&self.len.to_be_bytes());
         let ip_octets = self.data.octets();
-        answer.extend_from_slice(&ip_octets.len().to_be_bytes());
         answer.extend_from_slice(&ip_octets);
 
         return answer;

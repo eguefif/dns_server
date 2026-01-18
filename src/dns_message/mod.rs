@@ -13,63 +13,75 @@ pub mod question;
 #[derive(Debug)]
 pub struct DNSMessage {
     pub header: Header,
-    pub question: Question,
-    answer: Answer,
+    pub questions: Vec<Question>,
+    pub answers: Vec<Answer>,
 }
 
 impl DNSMessage {
     pub fn new(
         id: u16,
         flags: HeaderFlags,
-        qdcount: u16,
-        ancount: u16,
-        nscount: u16,
-        arcount: u16,
-        domain: String,
-        question_type: u16,
-        question_class: u16,
-        answer_type: u16,
-        answer_class: u16,
-        ttl: u32,
-        ip: Ipv4Addr,
+        questions: Vec<Question>,
+        answers: Vec<Answer>,
     ) -> Self {
-        let header = Header::new(id, flags, qdcount, ancount, nscount, arcount);
-        let question = Question::new(domain.clone(), question_type, question_class);
-        let answer = Answer::new(domain.clone(), answer_type, answer_class, ttl, ip);
+        let header = Header::new(
+            id,
+            flags,
+            questions.len() as u16,
+            answers.len() as u16,
+            0,
+            0,
+        );
 
         Self {
             header,
-            question,
-            answer,
+            questions,
+            answers,
         }
     }
 
-    pub fn from_buffer(size: usize, source: &[u8]) -> Result<Self, DNSError> {
+    pub fn from_buffer(size: usize, buffer: &[u8]) -> Result<Self, DNSError> {
         if size < 13 {
             return Err(DNSError::RequestHeaderSizeError(size));
         }
-        let header = Header::from_bytes(&source[0..12]);
-        let question = Question::from_bytes(&source[12..]);
-        let answer = Answer::new(
-            "codecrafters.io".to_string(),
-            1,
-            1,
-            60,
-            Ipv4Addr::new(8, 8, 8, 8),
-        );
+        let header = Header::from_bytes(&buffer[0..12]);
+        let mut questions = vec![];
+        let mut offset = 12;
+        for _ in 0..header.qdcount {
+            let question = Question::from_bytes(&buffer, offset);
+            offset += question.len;
+            questions.push(question);
+        }
+        let mut answers = vec![];
+
+        // TODO: imple from_buffer for answer
+        for _ in 0..header.ancount {
+            let answer = Answer::new(
+                "codecrafters.io".to_string(),
+                1,
+                1,
+                60,
+                Ipv4Addr::new(8, 8, 8, 8),
+            );
+            answers.push(answer);
+        }
 
         Ok(Self {
             header,
-            question,
-            answer,
+            questions,
+            answers,
         })
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = vec![];
         bytes.extend_from_slice(&self.header.to_bytes());
-        bytes.extend_from_slice(&self.question.to_bytes());
-        bytes.extend_from_slice(&self.answer.to_bytes());
+        for question in self.questions.iter() {
+            bytes.extend_from_slice(&question.to_bytes());
+        }
+        for answer in self.answers.iter() {
+            bytes.extend_from_slice(&answer.to_bytes());
+        }
         return bytes;
     }
 }
@@ -97,39 +109,51 @@ fn labels_to_bytes(labels: &[(u8, String)]) -> Vec<u8> {
 
 type Labels = Vec<(u8, String)>;
 
-fn labels_from_bytes(buffer: &[u8]) -> Labels {
+fn labels_from_bytes(buffer: &[u8], mut offset: usize) -> (Labels, usize) {
     let mut labels = vec![];
 
-    let mut iter = buffer.iter().peekable();
+    let mut iter = buffer[offset..].iter().peekable();
+    let mut labels_size = 0;
+    let mut compression = false;
     loop {
         let Some(size) = iter.next() else {
             todo!("handle error: early stop")
         };
+        if *size == 0b1100_0000 {
+            offset = *iter.next().unwrap() as usize;
+            iter = buffer[offset..].iter().peekable();
+            labels_size += 2;
+            compression = true;
+            continue;
+        }
+        if !compression {
+            labels_size += *size as usize + 1;
+        }
         let mut label = String::new();
         for _ in 0..*size {
             let byte = iter.next().unwrap();
-            let c = *byte as char;
-            print!("{}", c);
-            label.push(c);
+            label.push(*byte as char);
         }
-        print!(".");
         labels.push((*size, label));
         let Some(&peek) = iter.peek() else {
             todo!("Handle error: early stop")
         };
         if *peek == 0 {
+            if !compression {
+                labels_size += 1;
+            }
             break;
         }
     }
 
-    return labels;
+    (labels, labels_size)
 }
 
 fn get_labels_size(labels: &Labels) -> usize {
     let mut size: usize = 0;
     for (s, _) in labels {
-        size += *s as usize
+        size += *s as usize + 1
     }
 
-    size as usize
+    size as usize + 1
 }

@@ -1,10 +1,11 @@
-use crate::dns_message::{Labels, get_labels, get_labels_size, labels_from_bytes};
+use crate::dns_message::{Labels, get_labels, labels_from_bytes};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Question {
     labels: Labels,
     question_type: u16,
     class: u16,
+    pub len: usize,
 }
 
 impl Question {
@@ -13,6 +14,7 @@ impl Question {
             labels: get_labels(domain),
             question_type,
             class,
+            len: 0,
         }
     }
 
@@ -30,22 +32,23 @@ impl Question {
         return question;
     }
 
-    pub fn from_bytes(buffer: &[u8]) -> Self {
-        let labels = labels_from_bytes(buffer);
-        let labels_size = get_labels_size(&labels);
-        if labels_size + 4 > buffer.len() {
+    pub fn from_bytes(buffer: &[u8], offset: usize) -> Self {
+        let (labels, size) = labels_from_bytes(buffer, offset);
+        let qtype_offset = offset + size;
+        let class_offset = qtype_offset + 2;
+        if qtype_offset + 4 > buffer.len() {
             todo!("Handle size error")
         }
 
         let question_type =
-            u16::from_be_bytes(buffer[labels_size..labels_size + 2].try_into().unwrap());
-        let class =
-            u16::from_be_bytes(buffer[labels_size + 2..labels_size + 4].try_into().unwrap());
+            u16::from_be_bytes(buffer[qtype_offset..qtype_offset + 2].try_into().unwrap());
+        let class = u16::from_be_bytes(buffer[class_offset..class_offset + 2].try_into().unwrap());
 
         Self {
             labels,
             question_type,
             class,
+            len: size + 4,
         }
     }
 
