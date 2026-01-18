@@ -1,22 +1,51 @@
 #![allow(dead_code)]
 use modular_bitfield::prelude::*;
 
-#[bitfield]
-#[derive(Clone)]
-struct HeaderFlags {
-    // First byte
-    rd: B1,
-    tc: B1,
-    aa: B1,
-    opcode: B4,
-    qr: B1,
-    // Second Byte
-    rcode: B4,
-    reserved: B3,
-    ra: B1,
+pub struct DNSMessage {
+    header: Header,
+    question: Question,
 }
 
-struct DNSHeader {
+impl DNSMessage {
+    pub fn new(
+        flags: HeaderFlags,
+        qdcount: u16,
+        ancount: u16,
+        nscount: u16,
+        arcount: u16,
+        domain: String,
+    ) -> Self {
+        let header = Header::new(flags, qdcount, ancount, nscount, arcount);
+        let question = Question::new(domain, 1, 1);
+
+        Self { header, question }
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = vec![];
+        bytes.extend_from_slice(&self.header.to_bytes());
+        bytes.extend_from_slice(&self.question.to_bytes());
+        return bytes;
+    }
+}
+
+#[bitfield]
+#[derive(Clone)]
+pub struct HeaderFlags {
+    // First byte
+    pub rd: B1,
+    pub tc: B1,
+    pub aa: B1,
+    pub opcode: B4,
+    pub qr: B1,
+    // Second Byte
+    pub rcode: B4,
+    #[skip(getters, setters)]
+    pub reserved: B3,
+    pub ra: B1,
+}
+
+struct Header {
     id: u16,
     flags: HeaderFlags,
     qdcount: u16,
@@ -25,71 +54,63 @@ struct DNSHeader {
     arcount: u16,
 }
 
-impl DNSHeader {
-    pub fn new() -> Self {
-        let flags = HeaderFlags::new()
-            .with_qr(0b1)
-            .with_opcode(0)
-            .with_aa(0)
-            .with_tc(0)
-            .with_rd(0)
-            .with_ra(0)
-            .with_reserved(0)
-            .with_rcode(0);
-
+impl Header {
+    pub fn new(flags: HeaderFlags, qdcount: u16, ancount: u16, nscount: u16, arcount: u16) -> Self {
         Self {
             id: 1234,
             flags,
-            qdcount: 0,
-            ancount: 0,
-            nscount: 0,
-            arcount: 0,
+            qdcount,
+            ancount,
+            nscount,
+            arcount,
         }
     }
 
-    pub fn to_bytes(&self) -> [u8; 12] {
-        let mut response = [0; 12];
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut response = vec![];
 
-        let id = self.id.to_be_bytes();
-        response[0] = id[0];
-        response[1] = id[1];
-
-        let flags = self.flags.clone().into_bytes();
-        println!("{:b} {:b}", flags[0], flags[1]);
-        response[2] = flags[0];
-        response[3] = flags[1];
-
-        let qdcount = self.qdcount.to_be_bytes();
-        response[4] = qdcount[0];
-        response[5] = qdcount[1];
-
-        let ancount = self.ancount.to_be_bytes();
-        response[6] = ancount[0];
-        response[7] = ancount[1];
-
-        let nscount = self.nscount.to_be_bytes();
-        response[8] = nscount[0];
-        response[9] = nscount[1];
-
-        let arcount = self.arcount.to_be_bytes();
-        response[10] = arcount[0];
-        response[11] = arcount[1];
+        response.extend_from_slice(&self.id.to_be_bytes());
+        response.extend_from_slice(&self.flags.clone().into_bytes());
+        response.extend_from_slice(&self.qdcount.to_be_bytes());
+        response.extend_from_slice(&self.ancount.to_be_bytes());
+        response.extend_from_slice(&self.nscount.to_be_bytes());
+        response.extend_from_slice(&self.arcount.to_be_bytes());
 
         response
     }
 }
 
-pub struct DNSMessage {
-    header: DNSHeader,
+struct Question {
+    labels: Vec<(u8, String)>,
+    question_type: u16,
+    class: u16,
 }
 
-impl DNSMessage {
-    pub fn new() -> Self {
-        let header = DNSHeader::new();
-        Self { header }
+impl Question {
+    pub fn new(domain: String, question_type: u16, class: u16) -> Self {
+        let splits = domain.split(".");
+        let mut labels = vec![];
+        for split in splits {
+            labels.push((split.len() as u8, split.to_string()));
+        }
+        Self {
+            labels,
+            question_type,
+            class,
+        }
     }
 
-    pub fn to_bytes(&self) -> [u8; 12] {
-        return self.header.to_bytes();
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut question = vec![];
+        for (len, label) in self.labels.iter() {
+            question.push(*len);
+            question.extend_from_slice(&label.clone().into_bytes())
+        }
+        // Push null to terminate label sequence
+        question.push(0);
+        question.extend_from_slice(&self.question_type.to_be_bytes());
+        question.extend_from_slice(&self.class.to_be_bytes());
+
+        return question;
     }
 }

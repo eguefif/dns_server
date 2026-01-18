@@ -1,4 +1,4 @@
-use crate::dns_message::DNSMessage;
+use crate::dns_message::{DNSMessage, HeaderFlags};
 #[allow(unused_imports)]
 use std::net::UdpSocket;
 
@@ -28,8 +28,17 @@ fn main() {
     }
 }
 
-fn create_response() -> [u8; 12] {
-    let response = DNSMessage::new();
+fn create_response() -> Vec<u8> {
+    let flags = HeaderFlags::new()
+        .with_qr(1)
+        .with_opcode(0)
+        .with_aa(0)
+        .with_tc(0)
+        .with_rd(0)
+        .with_ra(0)
+        .with_rcode(0);
+
+    let response = DNSMessage::new(flags, 1, 0, 0, 0, "codecrafters.io".to_string());
 
     return response.to_bytes();
 }
