@@ -3,7 +3,6 @@ use crate::dns_error::DNSError;
 use crate::dns_message::answer::Answer;
 use crate::dns_message::header::{Header, HeaderFlags};
 use crate::dns_message::question::Question;
-use std::net::Ipv4Addr;
 use std::result::Result;
 
 pub mod answer;
@@ -40,8 +39,30 @@ impl DNSMessage {
         }
     }
 
+    // This constructor returns a DNSMessage with the header passed
+    // in argument, set the right rcode and the qr bit.
+    // Questions and answers are initialized with empty vectors
+    pub fn from_request_header(request: &DNSMessage, qdcount: u16, ancount: u16) -> Self {
+        let flags = HeaderFlags::new()
+            .with_qr(0)
+            .with_opcode(request.header.flags.opcode())
+            .with_aa(0)
+            .with_tc(0)
+            .with_rd(request.header.flags.rd())
+            .with_ra(0)
+            .with_rcode(request.header.flags.rcode());
+        let header = Header::new(request.header.id, flags, qdcount, ancount, 0, 0);
+        let questions = vec![];
+        let answers = vec![];
+        Self {
+            header,
+            questions,
+            answers,
+        }
+    }
+
     pub fn from_buffer(size: usize, buffer: &[u8]) -> Result<Self, DNSError> {
-        if size < 13 {
+        if size < 12 {
             return Err(DNSError::RequestHeaderSizeError(size));
         }
         let header = Header::from_bytes(&buffer[0..12]);
@@ -52,20 +73,14 @@ impl DNSMessage {
             offset += question.len;
             questions.push(question);
         }
+
         let mut answers = vec![];
 
-        // TODO: imple from_buffer for answer
         for _ in 0..header.ancount {
-            let answer = Answer::new(
-                "codecrafters.io".to_string(),
-                1,
-                1,
-                60,
-                Ipv4Addr::new(8, 8, 8, 8),
-            );
+            let answer = Answer::from_bytes(&buffer, offset);
+            offset += answer.len;
             answers.push(answer);
         }
-
         Ok(Self {
             header,
             questions,

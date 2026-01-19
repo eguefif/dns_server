@@ -3,6 +3,7 @@ use std::fmt;
 #[derive(Debug)]
 pub enum DNSError {
     RequestHeaderSizeError(usize),
+    FollowServerRequestError,
 }
 
 impl std::error::Error for DNSError {}
@@ -12,6 +13,9 @@ impl fmt::Display for DNSError {
         match *self {
             DNSError::RequestHeaderSizeError(size) => {
                 write!(f, "Request header size is wrong {}", size)
+            }
+            DNSError::FollowServerRequestError => {
+                write!(f, "Follow Server response is malformatted")
             }
         }
     }
