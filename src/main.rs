@@ -1,5 +1,5 @@
-use crate::server::Server;
 use crate::dns_error::DNSError;
+use crate::server::Server;
 use std::env;
 use std::error::Error;
 use std::net::{Ipv4Addr, SocketAddr};
@@ -12,7 +12,7 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
     let Ok(follow_server) = parse_arg() else {
         println!("Usage: dns_server <follow_server_ip:port>");
         return Err(Box::new(DNSError::NoFollowServer));
-    }; 
+    };
     let listen_ip = Ipv4Addr::new(0, 0, 0, 0);
     let port = 2053;
     let server = Server::new(listen_ip, port, follow_server)?;
@@ -23,8 +23,10 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
 
 fn parse_arg() -> Result<SocketAddr, DNSError> {
     let args: Vec<String> = env::args().collect();
-    if args.len() != 3 && args[1] != "--resolver"{
+    if args.len() != 3 && args[1] != "--resolver" {
         return Err(DNSError::NoFollowServer);
     }
-    args[2].parse::<SocketAddr>().map_err(|_| DNSError::FollowServerParseError)
+    args[2]
+        .parse::<SocketAddr>()
+        .map_err(|_| DNSError::FollowServerParseError)
 }

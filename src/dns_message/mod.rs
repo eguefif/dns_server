@@ -42,16 +42,16 @@ impl DNSMessage {
     // This constructor returns a DNSMessage with the header passed
     // in argument, set the right rcode and the qr bit.
     // Questions and answers are initialized with empty vectors
-    pub fn from_request_header(request: &DNSMessage, qdcount: u16, ancount: u16) -> Self {
+    pub fn from_request_header(header: &Header, qdcount: u16, ancount: u16) -> Self {
         let flags = HeaderFlags::new()
             .with_qr(0)
-            .with_opcode(request.header.flags.opcode())
+            .with_opcode(header.flags.opcode())
             .with_aa(0)
             .with_tc(0)
-            .with_rd(request.header.flags.rd())
+            .with_rd(header.flags.rd())
             .with_ra(0)
-            .with_rcode(request.header.flags.rcode());
-        let header = Header::new(request.header.id, flags, qdcount, ancount, 0, 0);
+            .with_rcode(header.flags.rcode());
+        let header = Header::new(header.id, flags, qdcount, ancount, 0, 0);
         let questions = vec![];
         let answers = vec![];
         Self {

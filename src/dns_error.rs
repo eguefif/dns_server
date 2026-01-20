@@ -18,14 +18,13 @@ impl fmt::Display for DNSError {
             }
             DNSError::FollowServerRequestError => {
                 write!(f, "Follow Server response is malformatted")
-            },
+            }
             DNSError::NoFollowServer => {
                 write!(f, "Missing follow server address")
-            },
+            }
             DNSError::FollowServerParseError => {
                 write!(f, "Follow Server response parsing error")
             }
-
         }
     }
 }
