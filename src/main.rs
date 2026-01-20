@@ -7,6 +7,7 @@ use std::net::{Ipv4Addr, SocketAddr};
 pub mod dns_error;
 pub mod dns_message;
 pub mod server;
+pub mod labels_helpers;
 
 fn main() -> std::result::Result<(), Box<dyn Error>> {
     let Ok(follow_server) = parse_arg() else {

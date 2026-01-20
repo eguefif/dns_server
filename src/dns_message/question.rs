@@ -1,4 +1,4 @@
-use crate::dns_message::{Labels, get_labels, labels_from_bytes};
+use crate::labels_helpers::{Labels, labels_from_string, labels_from_bytes};
 
 #[derive(Debug, Clone)]
 pub struct Question {
@@ -11,7 +11,7 @@ pub struct Question {
 impl Question {
     pub fn new(domain: String, question_type: u16, class: u16) -> Self {
         Self {
-            labels: get_labels(domain),
+            labels: labels_from_string(domain),
             question_type,
             class,
             len: 0,

@@ -1,4 +1,4 @@
-use crate::dns_message::{get_labels, labels_from_bytes, labels_to_bytes};
+use crate::labels_helpers::{labels_from_string, labels_from_bytes, labels_to_bytes};
 use std::net::Ipv4Addr;
 
 #[derive(Debug, Clone)]
@@ -16,7 +16,7 @@ impl Answer {
     pub fn new(domain: String, answer_type: u16, class: u16, ttl: u32, ip: Ipv4Addr) -> Self {
         let ip_octets = ip.octets();
         Self {
-            labels: get_labels(domain),
+            labels: labels_from_string(domain),
             answer_type,
             class,
             ttl,

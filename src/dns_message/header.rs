@@ -1,7 +1,7 @@
 use modular_bitfield::prelude::*;
 
 #[bitfield]
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct HeaderFlags {
     // First byte
     pub rd: B1,
@@ -47,7 +47,7 @@ impl Header {
 
     pub fn from_bytes(source: &[u8]) -> Self {
         // The following should never crash, source is at least 12 bytes long
-        //assert_eq!(source.len(), 12);
+        assert_eq!(source.len(), 12);
 
         let id = u16::from_be_bytes(source[0..2].try_into().expect("Error parsing flags"));
         let flags = HeaderFlags::from_bytes(source[2..4].try_into().expect("Error parsing flags"));
