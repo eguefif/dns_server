@@ -1,7 +1,7 @@
 use crate::dns_message::answer::Answer;
 use crate::dns_message::header::Header;
 use crate::dns_message::question::Question;
-use crate::dns_message::{DNSMessage, header::HeaderFlags};
+use crate::dns_message::DNSMessage;
 use std::error::Error;
 use std::net::UdpSocket;
 use std::net::{Ipv4Addr, SocketAddr};
@@ -36,7 +36,7 @@ impl Server {
                     match DNSMessage::from_buffer(size, &buffer) {
                         Ok(request) => {
                             let (questions, answers, header) = self.get_follow_response(request)?;
-                            let response = self.create_response(header, questions, answers);
+                            let response = DNSMessage::new_response(&header, questions, answers);
                             self.udp_socket
                                 .send_to(&response.to_bytes(), source)
                                 .expect("Failed to send response");
@@ -64,7 +64,7 @@ impl Server {
         let mut follow_questions = vec![];
         let mut follow_answers = vec![];
         for request_question in questions.into_iter() {
-            let follow_request = self.create_follow_request(&header, request_question);
+            let follow_request = DNSMessage::new_request(&header, vec![request_question]);
             self.udp_socket
                 .send_to(&follow_request.to_bytes(), self.follow_server)?;
 
@@ -82,39 +82,5 @@ impl Server {
         }
 
         Ok((follow_questions, follow_answers, header))
-    }
-
-    fn create_follow_request(&self, header: &Header, question: Question) -> DNSMessage {
-        let flags = HeaderFlags::new()
-            .with_qr(0)
-            .with_opcode(header.flags.opcode())
-            .with_aa(0)
-            .with_tc(0)
-            .with_rd(header.flags.rd())
-            .with_ra(0)
-            .with_rcode(header.flags.rcode());
-
-        DNSMessage::new(header.id, flags, vec![question], vec![])
-    }
-
-    fn create_response(
-        &self,
-        header: Header,
-        questions: Vec<Question>,
-        answers: Vec<Answer>,
-    ) -> DNSMessage {
-        let rcode = if header.flags.opcode() == 0 { 0 } else { 4 };
-        let flags = HeaderFlags::new()
-            .with_qr(1)
-            .with_opcode(header.flags.opcode())
-            .with_aa(0)
-            .with_tc(0)
-            .with_rd(header.flags.rd())
-            .with_ra(0)
-            .with_rcode(rcode);
-
-        let response = DNSMessage::new(header.id, flags, questions, answers);
-
-        response
     }
 }

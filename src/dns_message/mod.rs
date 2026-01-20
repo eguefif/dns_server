@@ -39,6 +39,66 @@ impl DNSMessage {
         }
     }
 
+    pub fn new_response(
+        response_header: &Header,
+        questions: Vec<Question>,
+        answers: Vec<Answer>,
+    ) -> Self {
+        let rcode = if response_header.flags.opcode() == 0 {
+            0
+        } else {
+            4
+        };
+        let flags = HeaderFlags::new()
+            .with_qr(1)
+            .with_opcode(response_header.flags.opcode())
+            .with_aa(0)
+            .with_tc(0)
+            .with_rd(response_header.flags.rd())
+            .with_ra(0)
+            .with_rcode(rcode);
+        let header = Header::new(
+            response_header.id,
+            flags,
+            questions.len() as u16,
+            answers.len() as u16,
+            0,
+            0,
+        );
+        Self {
+            header,
+            questions,
+            answers,
+        }
+    }
+
+    pub fn new_request(
+        request_header: &Header,
+        questions: Vec<Question>,
+    ) -> Self {
+        let flags = HeaderFlags::new()
+            .with_qr(0)
+            .with_opcode(request_header.flags.opcode())
+            .with_aa(0)
+            .with_tc(0)
+            .with_rd(request_header.flags.rd())
+            .with_ra(0)
+            .with_rcode(request_header.flags.rcode());
+        let header = Header::new(
+            request_header.id,
+            flags,
+            questions.len() as u16,
+            0,
+            0,
+            0,
+        );
+        Self {
+            header,
+            questions,
+            answers: vec![],
+        }
+    }
+
     pub fn from_buffer(size: usize, buffer: &[u8]) -> Result<Self, DNSError> {
         if size < 12 {
             return Err(DNSError::RequestHeaderSizeError(size));
