@@ -2,6 +2,7 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum DNSError {
+    NoFollowServer,
     RequestHeaderSizeError(usize),
     FollowServerRequestError,
 }
@@ -16,6 +17,9 @@ impl fmt::Display for DNSError {
             }
             DNSError::FollowServerRequestError => {
                 write!(f, "Follow Server response is malformatted")
+            },
+            DNSError::NoFollowServer => {
+                write!(f, "Missing follow server address")
             }
         }
     }

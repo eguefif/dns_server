@@ -10,7 +10,7 @@ use std::result::Result;
 const UDP_MAX: usize = 65535;
 
 pub struct Server {
-    follow_server: Option<SocketAddr>,
+    follow_server: SocketAddr,
     udp_socket: UdpSocket,
 }
 
@@ -18,7 +18,7 @@ impl Server {
     pub fn new(
         listen_ip: Ipv4Addr,
         port: u16,
-        follow_server: Option<SocketAddr>,
+        follow_server: SocketAddr,
     ) -> Result<Self, Box<dyn Error>> {
         let udp_socket = UdpSocket::bind((listen_ip, port))?;
         Ok(Self {
@@ -65,7 +65,7 @@ impl Server {
             let mut follow_request = DNSMessage::from_request_header(&request, 1, 0);
             follow_request.questions.push(request_question.clone());
             self.udp_socket
-                .send_to(&follow_request.to_bytes(), self.follow_server.unwrap())?;
+                .send_to(&follow_request.to_bytes(), self.follow_server)?;
 
             let (size, _) = self.udp_socket.recv_from(&mut buf)?;
             let mut follow_response = DNSMessage::from_buffer(size, &buf)?;
