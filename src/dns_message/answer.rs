@@ -1,4 +1,5 @@
 use crate::labels_helpers::{labels_from_string, labels_from_bytes, labels_to_bytes};
+use crate::dns_error::DNSError;
 use std::net::Ipv4Addr;
 
 #[derive(Debug, Clone)]
@@ -43,11 +44,11 @@ impl Answer {
         return answer;
     }
 
-    pub fn from_bytes(buffer: &[u8], offset: usize) -> Self {
-        let (labels, size) = labels_from_bytes(buffer, offset);
+    pub fn from_bytes(buffer: &[u8], offset: usize) -> Result<Self, DNSError> {
+        let (labels, size) = labels_from_bytes(buffer, offset)?;
         let offset = offset + size;
         if offset + 14 > buffer.len() {
-            todo!("Handle size error")
+            return Err(DNSError::AnswerSizeError);
         }
 
         // TODO: refactor, finder more idiomatic way
@@ -64,7 +65,7 @@ impl Answer {
         );
         let len = size + 10 + 4;
 
-        Self {
+        Ok(Self {
             labels,
             answer_type,
             class,
@@ -72,6 +73,6 @@ impl Answer {
             rdlength,
             data,
             len,
-        }
+        })
     }
 }

@@ -1,3 +1,5 @@
+use crate::dns_error::DNSError;
+use std::result::Result;
 pub type Labels = Vec<(u8, String)>;
 
 const COMPRESSION_TAG: u8 = 0b1100_0000;
@@ -24,7 +26,7 @@ pub fn labels_to_bytes(labels: &[(u8, String)]) -> Vec<u8> {
 }
 
 
-pub fn labels_from_bytes(buffer: &[u8], mut offset: usize) -> (Labels, usize) {
+pub fn labels_from_bytes(buffer: &[u8], mut offset: usize) -> Result<(Labels, usize), DNSError> {
     let mut labels = vec![];
 
     let mut iter = buffer[offset..].iter().peekable();
@@ -33,7 +35,7 @@ pub fn labels_from_bytes(buffer: &[u8], mut offset: usize) -> (Labels, usize) {
     loop {
         // TODO: Refactor, is there a more idiomatic way?
         let Some(size) = iter.next() else {
-            todo!("handle error: early stop")
+            return Err(DNSError::LabelParsingError("Expect label size got null.".to_string()));
         };
         if *size == COMPRESSION_TAG {
             offset = *iter.next().unwrap() as usize;
@@ -52,7 +54,7 @@ pub fn labels_from_bytes(buffer: &[u8], mut offset: usize) -> (Labels, usize) {
         }
         labels.push((*size, label));
         let Some(&peek) = iter.peek() else {
-            todo!("Handle error: early stop")
+            return Err(DNSError::LabelParsingError("Expect either null or a size, got EOL".to_string()));
         };
         if *peek == 0 {
             if !compression {
@@ -62,7 +64,7 @@ pub fn labels_from_bytes(buffer: &[u8], mut offset: usize) -> (Labels, usize) {
         }
     }
 
-    (labels, labels_size)
+    Ok((labels, labels_size))
 }
 
 pub fn get_labels_size(labels: &Labels) -> usize {

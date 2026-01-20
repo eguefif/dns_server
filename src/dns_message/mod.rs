@@ -100,14 +100,11 @@ impl DNSMessage {
     }
 
     pub fn from_buffer(size: usize, buffer: &[u8]) -> Result<Self, DNSError> {
-        if size < 12 {
-            return Err(DNSError::RequestHeaderSizeError(size));
-        }
-        let header = Header::from_bytes(&buffer[0..12]);
+        let header = Header::from_bytes(&buffer[0..12], size)?;
         let mut questions = vec![];
         let mut offset = 12;
         for _ in 0..header.qdcount {
-            let question = Question::from_bytes(&buffer, offset);
+            let question = Question::from_bytes(&buffer, offset)?;
             offset += question.len;
             questions.push(question);
         }
@@ -115,7 +112,7 @@ impl DNSMessage {
         let mut answers = vec![];
 
         for _ in 0..header.ancount {
-            let answer = Answer::from_bytes(&buffer, offset);
+            let answer = Answer::from_bytes(&buffer, offset)?;
             offset += answer.len;
             answers.push(answer);
         }

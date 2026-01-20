@@ -1,4 +1,5 @@
 use modular_bitfield::prelude::*;
+use crate::dns_error::DNSError;
 
 #[bitfield]
 #[derive(Copy, Clone, Debug)]
@@ -45,10 +46,12 @@ impl Header {
         }
     }
 
-    pub fn from_bytes(source: &[u8]) -> Self {
-        // The following should never crash, source is at least 12 bytes long
-        assert_eq!(source.len(), 12);
+    pub fn from_bytes(source: &[u8], size: usize) -> Result<Self, DNSError> {
+        if size < 12 {
+            return Err(DNSError::HeaderSizeError(size));
+        }
 
+        // These expect should never happens, we check the size before
         let id = u16::from_be_bytes(source[0..2].try_into().expect("Error parsing flags"));
         let flags = HeaderFlags::from_bytes(source[2..4].try_into().expect("Error parsing flags"));
         let qdcount = u16::from_be_bytes(source[4..6].try_into().expect("Error parsing flags"));
@@ -56,14 +59,14 @@ impl Header {
         let nscount = u16::from_be_bytes(source[8..10].try_into().expect("Error parsing flags"));
         let arcount = u16::from_be_bytes(source[10..12].try_into().expect("Error parsing flags"));
 
-        Self {
+        Ok(Self {
             id,
             flags,
             qdcount,
             ancount,
             nscount,
             arcount,
-        }
+        })
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {

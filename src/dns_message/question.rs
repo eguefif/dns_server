@@ -1,4 +1,5 @@
 use crate::labels_helpers::{Labels, labels_from_string, labels_from_bytes};
+use crate::dns_error::DNSError;
 
 #[derive(Debug, Clone)]
 pub struct Question {
@@ -32,12 +33,12 @@ impl Question {
         return question;
     }
 
-    pub fn from_bytes(buffer: &[u8], offset: usize) -> Self {
-        let (labels, size) = labels_from_bytes(buffer, offset);
+    pub fn from_bytes(buffer: &[u8], offset: usize) -> Result<Self, DNSError> {
+        let (labels, size) = labels_from_bytes(buffer, offset)?;
         let qtype_offset = offset + size;
         let class_offset = qtype_offset + 2;
         if qtype_offset + 4 > buffer.len() {
-            todo!("Handle size error")
+            return Err(DNSError::QuestionSizeError);
         }
 
         // TODO: refactor, finder more idiomatic way
@@ -45,12 +46,12 @@ impl Question {
             u16::from_be_bytes(buffer[qtype_offset..qtype_offset + 2].try_into().unwrap());
         let class = u16::from_be_bytes(buffer[class_offset..class_offset + 2].try_into().unwrap());
 
-        Self {
+        Ok(Self {
             labels,
             question_type,
             class,
             len: size + 4,
-        }
+        })
     }
 
     pub fn get_domain(&self) -> String {
