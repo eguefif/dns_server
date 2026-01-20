@@ -1,6 +1,8 @@
 use crate::dns_error::DNSError;
 use crate::labels_helpers::{labels_from_bytes, labels_from_string, labels_to_bytes};
 use std::net::Ipv4Addr;
+use std::io::Cursor;
+use byteorder::{ReadBytesExt, BigEndian};
 
 #[derive(Debug, Clone)]
 pub struct Answer {
@@ -44,24 +46,23 @@ impl Answer {
         return answer;
     }
 
-    pub fn from_bytes(buffer: &[u8], offset: usize) -> Result<Self, DNSError> {
+    pub fn from_bytes(buffer: &[u8], offset: usize) -> Result<Self, Box<dyn std::error::Error>> {
         let (labels, size) = labels_from_bytes(buffer, offset)?;
         let offset = offset + size;
         if offset + 14 > buffer.len() {
-            return Err(DNSError::AnswerSizeError);
+            return Err(Box::new(DNSError::AnswerSizeError));
         }
 
-        // TODO: refactor, finder more idiomatic way
-        let answer_type = u16::from_be_bytes(buffer[offset..offset + 2].try_into().unwrap());
-        let class = u16::from_be_bytes(buffer[offset + 2..offset + 4].try_into().unwrap());
-        let ttl = u32::from_be_bytes(buffer[offset + 4..offset + 8].try_into().unwrap());
-        let rdlength = u16::from_be_bytes(buffer[offset + 8..offset + 10].try_into().unwrap());
-        let rdata_offset = offset + 10 as usize;
+        let mut cursor = Cursor::new(&buffer[offset..]);
+        let answer_type = cursor.read_u16::<BigEndian>()?;
+        let class = cursor.read_u16::<BigEndian>()?;
+        let ttl = cursor.read_u32::<BigEndian>()?;
+        let rdlength = cursor.read_u16::<BigEndian>()?;
         let data = Ipv4Addr::new(
-            buffer[rdata_offset],
-            buffer[rdata_offset + 1],
-            buffer[rdata_offset + 2],
-            buffer[rdata_offset + 3],
+            cursor.read_u8()?,
+            cursor.read_u8()?,
+            cursor.read_u8()?,
+            cursor.read_u8()?,
         );
         let len = size + 10 + 4;
 

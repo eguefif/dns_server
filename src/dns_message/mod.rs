@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-use crate::dns_error::DNSError;
 use crate::dns_message::answer::Answer;
 use crate::dns_message::header::{Header, HeaderFlags};
 use crate::dns_message::question::Question;
@@ -89,7 +88,7 @@ impl DNSMessage {
         }
     }
 
-    pub fn from_buffer(size: usize, buffer: &[u8]) -> Result<Self, DNSError> {
+    pub fn from_buffer(size: usize, buffer: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         let header = Header::from_bytes(&buffer[0..12], size)?;
         let mut questions = vec![];
         let mut offset = 12;

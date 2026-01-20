@@ -35,7 +35,7 @@ impl Server {
                     println!("Received {} bytes from {}", size, source);
                     match DNSMessage::from_buffer(size, &buffer) {
                         Ok(request) => {
-                            let (questions, answers, header) = self.get_follow_response(request)?;
+                            let (questions, answers, header) = self.run_follow_response(request)?;
                             let response = DNSMessage::new_response(&header, questions, answers);
                             self.udp_socket
                                 .send_to(&response.to_bytes(), source)
@@ -53,7 +53,9 @@ impl Server {
         Ok(())
     }
 
-    fn get_follow_response(
+    // Follows up on each question in the request by sending it to the follow server
+    // The follow up server takes only one question per request.
+    fn run_follow_response(
         &self,
         request: DNSMessage,
     ) -> Result<(Vec<Question>, Vec<Answer>, Header), Box<dyn Error>> {
@@ -63,6 +65,7 @@ impl Server {
         let header = request.header;
         let mut follow_questions = vec![];
         let mut follow_answers = vec![];
+
         for request_question in questions.into_iter() {
             let follow_request = DNSMessage::new_request(&header, vec![request_question]);
             self.udp_socket
