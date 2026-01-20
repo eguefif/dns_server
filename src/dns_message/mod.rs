@@ -39,28 +39,6 @@ impl DNSMessage {
         }
     }
 
-    // This constructor returns a DNSMessage with the header passed
-    // in argument, set the right rcode and the qr bit.
-    // Questions and answers are initialized with empty vectors
-    pub fn from_request_header(header: &Header, qdcount: u16, ancount: u16) -> Self {
-        let flags = HeaderFlags::new()
-            .with_qr(0)
-            .with_opcode(header.flags.opcode())
-            .with_aa(0)
-            .with_tc(0)
-            .with_rd(header.flags.rd())
-            .with_ra(0)
-            .with_rcode(header.flags.rcode());
-        let header = Header::new(header.id, flags, qdcount, ancount, 0, 0);
-        let questions = vec![];
-        let answers = vec![];
-        Self {
-            header,
-            questions,
-            answers,
-        }
-    }
-
     pub fn from_buffer(size: usize, buffer: &[u8]) -> Result<Self, DNSError> {
         if size < 12 {
             return Err(DNSError::RequestHeaderSizeError(size));
@@ -131,6 +109,7 @@ fn labels_from_bytes(buffer: &[u8], mut offset: usize) -> (Labels, usize) {
     let mut labels_size = 0;
     let mut compression = false;
     loop {
+        // TODO: Refactor, is there a more idiomatic way?
         let Some(size) = iter.next() else {
             todo!("handle error: early stop")
         };

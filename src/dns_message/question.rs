@@ -40,6 +40,7 @@ impl Question {
             todo!("Handle size error")
         }
 
+        // TODO: refactor, finder more idiomatic way
         let question_type =
             u16::from_be_bytes(buffer[qtype_offset..qtype_offset + 2].try_into().unwrap());
         let class = u16::from_be_bytes(buffer[class_offset..class_offset + 2].try_into().unwrap());

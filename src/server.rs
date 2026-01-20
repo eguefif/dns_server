@@ -64,24 +64,37 @@ impl Server {
         let mut follow_questions = vec![];
         let mut follow_answers = vec![];
         for request_question in questions.into_iter() {
-            let mut follow_request = DNSMessage::from_request_header(&header, 1, 0);
-
-            follow_request.questions.push(request_question);
+            let follow_request = self.create_follow_request(&header, request_question);
             self.udp_socket
                 .send_to(&follow_request.to_bytes(), self.follow_server)?;
 
-
             let (size, _) = self.udp_socket.recv_from(&mut buf)?;
             let mut follow_response = DNSMessage::from_buffer(size, &buf)?;
-            if let Some(question) = follow_response.questions.pop() {
-                if let Some(answer) = follow_response.answers.pop() {
-                    follow_questions.push(question);
-                    follow_answers.push(answer);
-                }
+
+            if let Some((question, answer)) = follow_response
+                .questions
+                .pop()
+                .zip(follow_response.answers.pop())
+            {
+                follow_questions.push(question);
+                follow_answers.push(answer);
             }
         }
 
         Ok((follow_questions, follow_answers, header))
+    }
+
+    fn create_follow_request(&self, header: &Header, question: Question) -> DNSMessage {
+        let flags = HeaderFlags::new()
+            .with_qr(0)
+            .with_opcode(header.flags.opcode())
+            .with_aa(0)
+            .with_tc(0)
+            .with_rd(header.flags.rd())
+            .with_ra(0)
+            .with_rcode(header.flags.rcode());
+
+        DNSMessage::new(header.id, flags, vec![question], vec![])
     }
 
     fn create_response(
@@ -90,11 +103,7 @@ impl Server {
         questions: Vec<Question>,
         answers: Vec<Answer>,
     ) -> DNSMessage {
-        let rcode = if header.flags.opcode() == 0 {
-            0
-        } else {
-            4
-        };
+        let rcode = if header.flags.opcode() == 0 { 0 } else { 4 };
         let flags = HeaderFlags::new()
             .with_qr(1)
             .with_opcode(header.flags.opcode())
@@ -104,21 +113,7 @@ impl Server {
             .with_ra(0)
             .with_rcode(rcode);
 
-        let mut response_questions = vec![];
-        let mut response_answers = vec![];
-        for question in questions.into_iter() {
-            response_questions.push(question);
-        }
-        for answer in answers.into_iter() {
-            response_answers.push(answer);
-        }
-
-        let response = DNSMessage::new(
-            header.id,
-            flags,
-            response_questions,
-            response_answers,
-        );
+        let response = DNSMessage::new(header.id, flags, questions, answers);
 
         response
     }

@@ -50,6 +50,7 @@ impl Answer {
             todo!("Handle size error")
         }
 
+        // TODO: refactor, finder more idiomatic way
         let answer_type = u16::from_be_bytes(buffer[offset..offset + 2].try_into().unwrap());
         let class = u16::from_be_bytes(buffer[offset + 2..offset + 4].try_into().unwrap());
         let ttl = u32::from_be_bytes(buffer[offset + 4..offset + 8].try_into().unwrap());
