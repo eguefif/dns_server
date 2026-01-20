@@ -5,6 +5,7 @@ pub enum DNSError {
     NoFollowServer,
     RequestHeaderSizeError(usize),
     FollowServerRequestError,
+    FollowServerParseError,
 }
 
 impl std::error::Error for DNSError {}
@@ -20,7 +21,11 @@ impl fmt::Display for DNSError {
             },
             DNSError::NoFollowServer => {
                 write!(f, "Missing follow server address")
+            },
+            DNSError::FollowServerParseError => {
+                write!(f, "Follow Server response parsing error")
             }
+
         }
     }
 }
