@@ -8,7 +8,7 @@ pub enum DNSError {
     AnswerSizeError,
     FollowServerRequestError,
     FollowServerParseError,
-    LabelParsingError(String)
+    LabelParsingError(String),
 }
 
 impl std::error::Error for DNSError {}

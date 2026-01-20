@@ -1,5 +1,5 @@
-use crate::labels_helpers::{labels_from_string, labels_from_bytes, labels_to_bytes};
 use crate::dns_error::DNSError;
+use crate::labels_helpers::{labels_from_bytes, labels_from_string, labels_to_bytes};
 use std::net::Ipv4Addr;
 
 #[derive(Debug, Clone)]

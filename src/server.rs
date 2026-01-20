@@ -1,7 +1,7 @@
+use crate::dns_message::DNSMessage;
 use crate::dns_message::answer::Answer;
 use crate::dns_message::header::Header;
 use crate::dns_message::question::Question;
-use crate::dns_message::DNSMessage;
 use std::error::Error;
 use std::net::UdpSocket;
 use std::net::{Ipv4Addr, SocketAddr};

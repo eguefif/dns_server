@@ -1,5 +1,5 @@
-use modular_bitfield::prelude::*;
 use crate::dns_error::DNSError;
+use modular_bitfield::prelude::*;
 
 #[bitfield]
 #[derive(Copy, Clone, Debug)]

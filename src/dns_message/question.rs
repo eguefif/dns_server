@@ -1,5 +1,5 @@
-use crate::labels_helpers::{Labels, labels_from_string, labels_from_bytes};
 use crate::dns_error::DNSError;
+use crate::labels_helpers::{Labels, labels_from_bytes, labels_from_string};
 
 #[derive(Debug, Clone)]
 pub struct Question {

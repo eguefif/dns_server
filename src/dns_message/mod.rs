@@ -72,10 +72,7 @@ impl DNSMessage {
         }
     }
 
-    pub fn new_request(
-        request_header: &Header,
-        questions: Vec<Question>,
-    ) -> Self {
+    pub fn new_request(request_header: &Header, questions: Vec<Question>) -> Self {
         let flags = HeaderFlags::new()
             .with_qr(0)
             .with_opcode(request_header.flags.opcode())
@@ -84,14 +81,7 @@ impl DNSMessage {
             .with_rd(request_header.flags.rd())
             .with_ra(0)
             .with_rcode(request_header.flags.rcode());
-        let header = Header::new(
-            request_header.id,
-            flags,
-            questions.len() as u16,
-            0,
-            0,
-            0,
-        );
+        let header = Header::new(request_header.id, flags, questions.len() as u16, 0, 0, 0);
         Self {
             header,
             questions,
